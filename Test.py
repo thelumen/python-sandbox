@@ -63,7 +63,7 @@ def maximum(data):
     for i in range(len(d2) - 1):
         count = i
         i += 1
-        if d2[i] <= 0 and d2[count] > 0:
+        if d2[i] <= 0 < d2[count]:
             maximums.append(i)
     return maximums
 

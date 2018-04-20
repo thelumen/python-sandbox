@@ -5,12 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy import signal
-from getpredata import get_pre_data, data2plt
+from getpredata import get_pre_data, data2plt, compared
 from pearson import pearson, euc_dist
-
-index_r_d_r = [6, 7, 0, 1, 3, 4, 5, 2]
-index_l_d_r = [1, 0, 6, 7, 5, 2, 3, 4]
-index_c = ['k', 'r', 'tan', 'orange', 'm', 'b', 'g', 'yellow']
 
 
 def cogr(p, p_x, p_y):
@@ -57,15 +53,6 @@ def fitting(data_t, t):
     return p
 
 
-def compared(c_d_1, c_d_2, no):
-    plt.plot(c_d_1, label='observer', color='c')
-    plt.plot(c_d_2, label='patient', color=index_c[no])
-    plt.legend(loc='upper left')
-    plt.ylim(0, 180)
-    plt.title(no)
-    plt.show()
-
-
 def butter(x, b=0.36):
     """低通滤波"""
     b, a = signal.butter(3, b)
@@ -81,9 +68,12 @@ def scale_line(data, limit):
         return data
     else:
         for i in range(limit):
-            x = i * data_size / (limit + 1)
+            x = i * (data_size - 1) / (limit - 1)
             x_up = math.ceil(x)
             x_down = int(x)
+            # if i == limit - 1:
+            #     data_scale.append(data[data_size - 1])
+            #     continue
             if x_up == x_down:
                 data_scale.append(data[x_down])
                 continue
@@ -95,8 +85,8 @@ def scale_line(data, limit):
     return data_scale
 
 
-# 根据最大值对齐
 def alignment_max(data_1, data_2, step_a=30):
+    """根据最大值对齐"""
     max_p_1 = np.argmax(data_1)
     max_p_2 = np.argmax(data_2)
     if max_p_1 == max_p_2:
@@ -111,29 +101,8 @@ def alignment_max(data_1, data_2, step_a=30):
     return data_1, data_2
 
 
-def mov_dist(data_1, data_2, dire, distances):
-    r_p = np.where(np.array(dire) > 0)
-    l_p = np.where(np.array(dire) < 0)
-    r_n = len(r_p)
-    l_n = len(l_p)
-    if r_n > 4:
-        panning = int(np.average(np.array(distances)[r_p]))
-        for i in r_p:
-            data_1[i] = data_1[i][panning:]
-            data_2[i] = data_2[i][:(len(data_1[i]) - panning)]
-        return data_1, data_2
-    elif l_n > 4:
-        panning = int(np.average(np.array(distances)[l_p]))
-        for i in r_p:
-            data_1[i] = data_1[i][:(len(data_1[i]) - panning)]
-            data_2[i] = data_2[i][panning:]
-        return data_1, data_2
-    else:
-        return data_1, data_2
-
-
-# 根据欧氏距离对齐
-def alignment_euc(data_1, data_2, step_a=6):
+def alignment_euc(data_1, data_2, step_a=7):
+    """根据欧氏距离对齐"""
     r_euc = []
     l_euc = []
     for i in range(step_a):
@@ -141,19 +110,39 @@ def alignment_euc(data_1, data_2, step_a=6):
         l_euc.append(euc_dist(data_1[:(len(data_1) - i)], data_2[i:]))
     if min(r_euc) < min(l_euc):
         min_p = np.argmin(r_euc)
-        if min_p == 9:
+        if min_p == step_a - 1:
             return data_1, data_2, 0, 0
         else:
             return data_1[min_p:], data_2[:(len(data_1) - min_p)], 1, min_p
     else:
         min_p = np.argmin(l_euc)
-        if min_p == 9:
+        if min_p == step_a - 1:
             return data_1, data_2, 0, 0
         else:
             return data_1[:(len(data_1) - min_p)], data_2[min_p:], -1, min_p
 
 
+def mov_dist(data_1, data_2, dire, distances):
+    r_p = np.where(np.array(dire) > 0)
+    l_p = np.where(np.array(dire) < 0)
+    r_n = len(r_p[0])
+    l_n = len(l_p[0])
+    if l_n > 3:
+        panning = int(np.average(np.array(distances)[l_p]))
+        for i in range(8):
+            data_1[i] = data_1[i][:(len(data_1[i]) - panning)]
+            data_2[i] = data_2[i][panning:]
+    elif r_n > 4:
+        panning = int(np.average(np.array(distances)[r_p]))
+        for i in range(8):
+            data_1[i] = data_1[i][panning:]
+            data_2[i] = data_2[i][:(len(data_2[i]) - panning)]
+    return data_1, data_2
+
+
 def alignment(data_1, data_2, comp=False):
+    direction = []
+    distance = []
     for i in range(8):
         a_d_1, a_d_2, dirc, dist = alignment_euc(data_1[i], data_2[i])
         direction.append(dirc)
@@ -165,69 +154,101 @@ def alignment(data_1, data_2, comp=False):
 
 
 if __name__ == "__main__":
-    foot_data = get_pre_data('/home/ri/user/Tem/医院数据/积水潭/2018-03-27', 0)
-    normal_path = '/home/ri/out.prs'
-    file_n = '1522114734_left.json'
-    observer_path = '/home/ri/Data/Observer/' + file_n
-    weaken_coefficient = [[0.85, 1.4, 0.85, 0.9],
-                          [0.85, 1.4, 0.85, 0.9],
-                          [0.85, 0.9, 1.15, 1.1],
-                          [0.85, 0.9, 1.15, 1.1],
-                          [0.85, 0.9, 1.15, 1.1],
-                          [0.7, 1.2, 1.4, 0.7],
-                          [0.7, 1.2, 1.4, 0.7],
-                          [0.85, 0.85, 1.2, 1.1]]
-    switching = 1
-    switching_0 = 1
+    # foot_data = get_pre_data('/home/ri/user/Tem/医院数据/积水潭/2018-03-27', 0)
+    x_limit = 100
+    point_limit = 6
+    index_r_d_r = [6, 7, 0, 1, 3, 4, 5, 2]
 
-    if switching == 0:
-        data_n = np.array(np.fromfile(normal_path, 'u1'), dtype='f4')
-        data_n = [scale_line(butter(data_n[index_r_d_r[i]::8][290:340], 0.27), 60) for i in range(8)]
-    elif switching == 1:
-        data_n = next(get_pre_data(observer_path, -1))
-        data_n = [scale_line(butter(data_n[i]), 100) for i in range(8)]
-    # data2plt(data_n, normal_path)
-    g_count = 0
+    file_n = '/1522114734_left.json'
+    observer_patient_path = '/home/ri/Data/Observer/pa' + file_n
+    observer_normal_path = '/home/ri/Data/Observer/no'
+    patient_path = '/home/ri/Data/patient'
+
+    obn_foot_data = get_pre_data(observer_normal_path, 0)
+    obp_foot_data = get_pre_data(observer_patient_path, -1)
+    # 对照组：正常 or 患者
+    switching = 0
+    # 是否使用分段 pearson
+    switching_0 = 0
+    # 是否使用对齐 alignment
+    switching_1 = 0
+    # 开关列表
+    switch = [switching, switching_0, switching_1]
+    g_count_ob = 0
     while True:
         try:
-            if g_count != 2:
-                g_count += 1
-                continue
-            data_p = next(foot_data)
-            data_p = [scale_line(butter(data_p[i]), len(data_n[0])) for i in range(8)]
-            # data2plt(data_p, g_count)
-            pearson_list = []
-            direction = []
-            distance = []
-            if switching_0 == 0:
-                d_n, d_p = alignment(data_n, data_p, True)
-                for i in range(8):
-                    compared(d_n[i], d_p[i], i)
-                    pearson_list.append(pearson(d_n[i], d_p[i]))
-            elif switching_0 == 1:
-                step = 3
-                unit = 10
-                d_n, d_p = alignment(data_n, data_p)
-                for i in range(8):
-                    section = int(len(d_n[i]) / unit) - step + 1
-                    unit_pearson = []
-                    for j in range(section):
-                        begin = j * unit
-                        end = (j + step) * unit
-                        unit_pearson.append(pearson(d_n[i][begin:end], d_p[i][begin:end]))
-                    pearson_list.append(unit_pearson)
-                    pearson_list[i] = sum([pearson_list[i][j] * 1 for j in range(section)]) / section
-
-            print(pearson_list[:4])
-            print(pearson_list[4:])
             print('---------------')
-            # print(direction)
-            # print(distance)
-            g_count += 1
+            if switching == 0:
+                data_normal, f_o = next(obn_foot_data)
+                print('对照组：正常人->' + f_o)
+            else:
+                data_normal, f_o = next(obp_foot_data)
+                print('对照组：患者->' + f_o)
+            data_normal = [scale_line(butter(data_normal[i]), x_limit) for i in range(8)]
+            p_foot_data = get_pre_data(patient_path, 2)
+            # data2plt(data_normal, normal_path)
+            p_sq = np.zeros(point_limit)
+            p_sh = np.zeros(point_limit)
+            p_sq_n = 0
+            p_sh_n = 0
+            g_count = 0
+            while True:
+                try:
+                    data_n = data_normal
+                    show = False
+                    # if g_count == 1:
+                    #     data_p, filename = next(p_foot_data)
+                    #     g_count += 1
+                    #     continue
+                    data_p, filename = next(p_foot_data)
+                    data_p = [scale_line(butter(data_p[i]), x_limit) for i in range(8)]
+                    pearson_list = []
+                    if switching_1 == 0:
+                        d_n, d_p = data_n, data_p
+                    else:
+                        d_n, d_p = alignment(data_n, data_p, show)
+                    if switching_0 == 0:
+                        for i in range(point_limit):
+                            # compared(d_n[i], d_p[i], i)
+                            pearson_list.append(pearson(d_n[i], d_p[i]))
+                    else:
+                        step = 3
+                        unit = 10
+                        # data2plt(d_n, filename)
+                        # data2plt(d_p, filename)
+                        for i in range(point_limit):
+                            section = int(len(d_n[i]) / unit) - step + 1
+                            unit_pearson = []
+                            for j in range(section):
+                                begin = j * unit
+                                end = (j + step) * unit
+                                unit_pearson.append(pearson(d_n[i][begin:end], d_p[i][begin:end]))
+                            pearson_list.append(unit_pearson)
+                            pearson_list[i] = sum([pearson_list[i][j] * 1 for j in range(section)]) / section
+                    if filename[25:27] == '术后':
+                        p_sh += np.array(pearson_list)
+                        p_sh_n += 1
+                    else:
+                        p_sq += np.array(pearson_list)
+                        p_sq_n += 1
+                    # print('编号', g_count, ',路径', filename)
+                    # print(pearson_list[:3])
+                    # print(pearson_list[3:])
+                    # print('---------------')
+                    g_count += 1
+                except StopIteration as e:
+                    # print('Generator 1 is over, and return value:', g_count)
+                    break
+            p_sh = [p_sh[i] / p_sh_n for i in range(point_limit)]
+            p_sq = [p_sq[i] / p_sq_n for i in range(point_limit)]
+            print('术前：', p_sq)
+            print('术后：', p_sh)
+            g_count_ob += 1
         except StopIteration as e:
-            print('Generator is over, and return value:', g_count)
+            # print('Generator 2 is over, and return value:', g_count_ob)
             break
-
+    print('>>>>>>')
+    print(switch)
 # 读取C文件* weaken_coefficient[i][j]
 # lib = load_library('/home/ri/a.so', '.')
 # interpolate_foot = lib.interpolate_foot

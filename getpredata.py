@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+index_c = ['k', 'r', 'tan', 'orange', 'm', 'b', 'g', 'yellow']
+
 
 def get_dir_names(home_path):
     for parent_names, dir_names, file_names in os.walk(home_path):
@@ -63,11 +65,19 @@ def extract_pressure(file_path):
 
 
 def data2plt(data, filename):
-    index_c = ['k', 'r', 'tan', 'orange', 'm', 'b', 'g', 'yellow']
     for i in range(8):
         plt.plot(data[i], color=index_c[i])
     plt.ylim(0, 180)
     plt.title(filename)
+    plt.show()
+
+
+def compared(c_d_1, c_d_2, no):
+    plt.plot(c_d_1, label='observer', color='c')
+    plt.plot(c_d_2, label='patient', color=index_c[no])
+    plt.legend(loc='upper left')
+    plt.ylim(0, 180)
+    plt.title(no)
     plt.show()
 
 
@@ -99,13 +109,13 @@ def get_pre_data(root_path='/home/ri/user/Tem/医院数据', deep='2', show_plt=
                         data_r[i].append(a_pre_data[step[0]:step[1]])
                     if show_plt:
                         data2plt(data_r[i], file_path_info)
-                    yield data_r[i]
+                    yield data_r[i], file_path_info
                 # print(data_r)
             g_count += 1
             if deep == -1:
                 break
         except StopIteration as e:
-            print('Generator is over, and return value:', g_count)
+            # print('Generator 0 is over, and return value:', g_count)
             break
 
 

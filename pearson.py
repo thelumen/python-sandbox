@@ -62,5 +62,6 @@ def pearson(x, y):
 
 if __name__ == "__main__":
     a = [1, -2, 5, -4, 3, -2]
-    b = [2, 3, 4, 3, -2, 1]
-    c = frechet_distance(a, b)
+    a = np.array(a)
+    b = a + 1
+    c = pearson(a, b)
