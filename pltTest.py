@@ -166,7 +166,7 @@ def alignment(data_1, data_2, point_limit, comp=False):
 
 
 def similarity(ob_foot_data, pa_foot_data, switch, p=6):
-    x_limit = 30
+    x_limit = 50
     point_limit = p
     weighted = [[0.2, 0.4, 1.6, 1.9, 1.7, 1.6, 0.4, 0.2],
                 [0.2, 0.4, 1.6, 1.9, 1.7, 1.6, 0.4, 0.2],
@@ -233,7 +233,7 @@ def similarity(ob_foot_data, pa_foot_data, switch, p=6):
     for i in range(group_size):
         group_variance.append([np.var(comp_group[i]), comp_group[i]])
     group_v = sorted(group_variance, key=lambda x: x[0])[:final_size]
-    result = np.zeros(6)
+    result = np.zeros(point_limit)
     for i in range(final_size):
         result += group_v[i][1]
     return result / final_size
@@ -259,7 +259,7 @@ def observer_stability(path, switch, point_limit):
                     pa_r_f_d.append(pa_f_d[i])
             left = False
             right = False
-            if switch[3] == 0:
+            if switch[4] == 0:
                 for i in range(len(pa_p_d)):
                     if not left:
                         if get_foot_type(pa_p_d[i], 4) == 'left':
@@ -269,17 +269,9 @@ def observer_stability(path, switch, point_limit):
                         if get_foot_type(pa_p_d[i], 5) == 'right':
                             group_type['right'] = similarity(pa_r_f_d, pa_r_f_d, switch, point_limit)
                             right = True
+                            group[patient] = group_type
             else:
-                for i in range(len(pa_p_d)):
-                    if not left:
-                        if get_foot_type(pa_p_d[i], 4) == 'left':
-                            group_type['left'] = similarity(pa_l_f_d, pa_r_f_d, switch, point_limit)
-                            left = True
-                    if not right:
-                        if get_foot_type(pa_p_d[i], 5) == 'right':
-                            group_type['right'] = similarity(pa_r_f_d, pa_l_f_d, switch, point_limit)
-                            right = True
-            group[patient] = group_type
+                group[patient] = similarity(pa_f_d, pa_f_d, switch, point_limit)
         else:
             group[patient] = similarity(pa_f_d, pa_f_d, switch, point_limit)
     return group
@@ -302,23 +294,23 @@ if __name__ == "__main__":
     #         plt.close()
 
     # 点数限制
-    p_l = 6
+    p_l = 2
     # 单侧 or 双侧
     switching = 0
     # 是否使用对齐
-    switching_0 = 1
-    # 是否使用分段
     switching_1 = 0
-    # pearson or euc
+    # 是否使用分段
     switching_2 = 0
-    # 相同 or 不同
+    # pearson or euc
     switching_3 = 0
+    # 相同 or 不同
+    switching_4 = 0
     # 开关序列
-    switch_list = [switching, switching_0, switching_1, switching_2, switching_3]
+    switch_list = [switching, switching_1, switching_2, switching_3, switching_4]
 
     sq_group = observer_stability(patient_path + '/术前', switch_list, p_l)
     sh_group = observer_stability(patient_path + '/术后', switch_list, p_l)
-    if switching == 0:
+    if switching == 0 and switching_4 == 0:
         for key in sq_group.keys():
             turn = 0
             print(key)
@@ -327,13 +319,13 @@ if __name__ == "__main__":
             condition = []
             for i in range(p_l):
                 if sq_group[key]['left'][i] < sh_group[key]['left'][i]:
-                    if switching_2 == 0:
+                    if switching_3 == 0:
                         condition.append('好')
                         turn += 1
                     else:
                         condition.append('坏')
                 else:
-                    if switching_2 == 0:
+                    if switching_3 == 0:
                         condition.append('坏')
                     else:
                         turn += 1
@@ -344,13 +336,13 @@ if __name__ == "__main__":
             condition = []
             for i in range(p_l):
                 if sq_group[key]['right'][i] < sh_group[key]['right'][i]:
-                    if switching_2 == 0:
+                    if switching_3 == 0:
                         turn += 1
                         condition.append('好')
                     else:
                         condition.append('坏')
                 else:
-                    if switching_2 == 0:
+                    if switching_3 == 0:
                         condition.append('坏')
                     else:
                         turn += 1
@@ -366,13 +358,13 @@ if __name__ == "__main__":
             condition = []
             for i in range(p_l):
                 if sq_group[key][i] < sh_group[key][i]:
-                    if switching_2 == 0:
+                    if switching_3 == 0:
                         condition.append('好')
                         turn += 1
                     else:
                         condition.append('坏')
                 else:
-                    if switching_2 == 0:
+                    if switching_3 == 0:
                         condition.append('坏')
                     else:
                         turn += 1
