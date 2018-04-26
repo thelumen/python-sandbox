@@ -20,19 +20,19 @@ def get_file_names(home_path):
 def get_file_path_info_2(home_path):
     for dir_name_1 in get_dir_names(home_path):
         home_path_1 = home_path + '/' + dir_name_1
-        for dir_name_2 in get_dir_names(home_path_1):
-            home_path_2 = home_path_1 + '/' + dir_name_2
-            for file_name_3 in get_file_names(home_path_2):
-                if os.path.splitext(file_name_3)[1] == '.json':
-                    yield home_path_2 + '/' + file_name_3
+        for dir_name_0 in get_dir_names(home_path_1):
+            home_path_2 = home_path_1 + '/' + dir_name_0
+            for file_name in get_file_names(home_path_2):
+                if os.path.splitext(file_name)[1] == '.json':
+                    yield home_path + '/' + file_name
 
 
 def get_file_path_info_1(home_path):
     for dir_name_1 in get_dir_names(home_path):
         home_path_1 = home_path + '/' + dir_name_1
-        for file_name_3 in get_file_names(home_path_1):
-            if os.path.splitext(file_name_3)[1] == '.json':
-                yield home_path_1 + '/' + file_name_3
+        for file_name in get_file_names(home_path_1):
+            if os.path.splitext(file_name)[1] == '.json':
+                yield home_path + '/' + file_name
 
 
 def get_file_path_info_0(home_path):
@@ -75,21 +75,19 @@ def data2plt(data, filename):
 def compared(c_d_1, c_d_2, no):
     plt.plot(c_d_1, label='observer', color='c')
     plt.plot(c_d_2, label='patient', color=index_c[no])
+    plt.grid(True)
     plt.legend(loc='upper left')
     plt.ylim(0, 180)
     plt.title(no)
     plt.show()
 
 
-def get_pre_data(root_path='/home/ri/user/Tem/医院数据', deep='2', show_plt=False):
+def get_pre_data(root_path, deep, show_plt=False):
     fpi = 0
-    if deep == 2:
-        fpi = get_file_path_info_2(root_path)
-    elif deep == 1:
-        fpi = get_file_path_info_1(root_path)
-    elif deep == 0:
+    if deep == 0:
         fpi = get_file_path_info_0(root_path)
-
+    result = []
+    path = []
     g_count = 0
     while True:
         try:
@@ -99,25 +97,56 @@ def get_pre_data(root_path='/home/ri/user/Tem/医院数据', deep='2', show_plt=
                 file_path_info = next(fpi)
             data = extract_pressure(file_path_info.replace('.json', '.dat'))
             with open(file_path_info, 'r') as load_file:
+                print(file_path_info)
                 load_json = json.load(load_file)
                 interception = load_json['footstep']
                 data_r = []
                 for i in range(len(interception)):
                     step = interception[i]
-                    data_r.append([])
-                    for a_pre_data in data:
-                        data_r[i].append(a_pre_data[step[0]:step[1]])
+                    data_r.append([a_data[step[0]:step[1]] for a_data in data])
                     if show_plt:
                         data2plt(data_r[i], file_path_info)
-                    yield data_r[i], file_path_info
-                # print(data_r)
             g_count += 1
+            result.append(data_r)
+            path.append(file_path_info)
             if deep == -1:
                 break
         except StopIteration as e:
             # print('Generator 0 is over, and return value:', g_count)
             break
+    return result, path
+
+
+def get_pre_and_step_data(root_path, deep):
+    fpi = 0
+    if deep == 0:
+        fpi = get_file_path_info_0(root_path)
+    data = []
+    path = []
+    interception = []
+    # g_count = 0
+    while True:
+        try:
+            if deep == -1:
+                file_path_info = root_path
+            else:
+                file_path_info = next(fpi)
+            json_data = extract_pressure(file_path_info.replace('.json', '.dat'))
+            with open(file_path_info, 'r') as load_file:
+                print(file_path_info)
+                load_json = json.load(load_file)
+                cut = load_json['footstep']
+            # g_count += 1
+            data.append(json_data)
+            path.append(file_path_info)
+            interception.append(cut)
+            if deep == -1:
+                break
+        except StopIteration as e:
+            # print('Generator 0 is over, and return value:', g_count)
+            break
+    return data, interception, path
 
 
 if __name__ == "__main__":
-    get_pre_data('/home/ri/user/Tem/医院数据', show_plt=True)
+    get_pre_data('/home/ri/user/Tem/医院数据', 1, show_plt=True)
