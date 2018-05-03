@@ -34,24 +34,26 @@ def solution(equation, y):
     return equation.r
 
 
-def save_image(foot_data, path_data):
+def save_image(foot_data, path_data, point_limit):
+    maker = ['*', ':']
     for json in range(len(foot_data)):
         for step in range(len(foot_data[json])):
-            for i in range(8):
-                plt.plot(foot_data[json][step][i], color=index_c[i])
+            for i in range(point_limit):
+                plt.plot(foot_data[json][step][i], maker[i], color=index_c[i])
             plt.ylim(0, 180)
-            file_name = get_file_name(path_data[json])
-            patient_name = os.path.split(file_name[0])
-            p_condition = os.path.split(patient_name[0])
-            if p_condition == '术前':
-                p_condition = 'before'
-            else:
-                p_condition = 'after'
-            title = p_condition[0] + '/img/' + p_condition[1] + '/' + patient_name[1] + '/' + file_name[1] + '_' + str(
-                step) + '.png'
-            plt.title(title)
-            plt.savefig(title)
-            plt.close()
+            plt.show()
+            # file_name = get_file_name(path_data[json])
+            # patient_name = os.path.split(file_name[0])
+            # p_condition = os.path.split(patient_name[0])
+            # if p_condition == '术前':
+            #     p_condition = 'before'
+            # else:
+            #     p_condition = 'after'
+            # title = p_condition[0] + '/img/' + p_condition[1] + '/' + patient_name[1] + '/' + file_name[1] + '_' + str(
+            #     step) + '.png'
+            # plt.title(title)
+            # plt.savefig(title)
+            # plt.close()
 
 
 def get_file_name(path):
@@ -107,7 +109,7 @@ def scale_line(data, limit):
     for i in range(limit):
         x = i * (data_size - 1) / (limit - 1)
         x_up = math.ceil(x)
-        x_down = int(x)
+        x_down = math.floor(x)
         if x_up == x_down:
             data_scale.append(data[x_down])
             continue
@@ -117,52 +119,6 @@ def scale_line(data, limit):
         y = r[0] * x + r[1]
         data_scale.append(float(y))
     return data_scale
-
-
-def alignment_euc(data_1, data_2, step_a=3):
-    """根据欧氏距离对齐"""
-    r_euc = []
-    l_euc = []
-    for i in range(step_a):
-        r_euc.append(euc_dist(data_1[i:], data_2[:(len(data_1) - i)]))
-        l_euc.append(euc_dist(data_1[:(len(data_1) - i)], data_2[i:]))
-    if min(r_euc) < min(l_euc):
-        min_p = np.argmin(r_euc)
-        return data_1[min_p:], data_2[:(len(data_1) - min_p)], 1, min_p
-    else:
-        min_p = np.argmin(l_euc)
-        return data_1[:(len(data_1) - min_p)], data_2[min_p:], -1, min_p
-
-
-def mov_dist(data_1, data_2, dire, distances, point_limit):
-    r_p = np.where(np.array(dire) > 0)
-    l_p = np.where(np.array(dire) < 0)
-    r_n = len(r_p[0])
-    l_n = len(l_p[0])
-    if l_n > 3:
-        panning = int(np.average(np.array(distances)[l_p]))
-        for i in range(point_limit):
-            data_1[i] = data_1[i][:(len(data_1[i]) - panning)]
-            data_2[i] = data_2[i][panning:]
-    elif r_n > 4:
-        panning = int(np.average(np.array(distances)[r_p]))
-        for i in range(point_limit):
-            data_1[i] = data_1[i][panning:]
-            data_2[i] = data_2[i][:(len(data_2[i]) - panning)]
-    return data_1, data_2
-
-
-def alignment(data_1, data_2, point_limit, comp=False):
-    direction = []
-    distance = []
-    for i in range(point_limit):
-        a_d_1, a_d_2, dirc, dist = alignment_euc(data_1[i], data_2[i])
-        direction.append(dirc)
-        distance.append(dist)
-        if comp:
-            compared(data_1[i], data_2[i], i)
-            compared(a_d_1, a_d_2, i)
-    return mov_dist(data_1, data_2, direction, distance, point_limit)
 
 
 def similarity(ob_foot_data, pa_foot_data, switch, p=6):
@@ -188,10 +144,7 @@ def similarity(ob_foot_data, pa_foot_data, switch, p=6):
                     data_normal = [scale_line(butter(o_foot_step[i]), x_limit) for i in range(point_limit)]
                     data_patient = [scale_line(butter(p_step_data[i]), x_limit) for i in range(point_limit)]
                     # 对齐方法开关
-                    if switch[1] == 0:
-                        d_n, d_p = data_normal, data_patient
-                    else:
-                        d_n, d_p = alignment(data_normal, data_patient, point_limit)
+                    d_n, d_p = data_normal, data_patient
                     # 分段方法开关
                     if switch[2] == 0:
                         for i in range(point_limit):
@@ -242,12 +195,14 @@ def similarity(ob_foot_data, pa_foot_data, switch, p=6):
 def observer_stability(path, switch, point_limit):
     group = {}
     patients = sorted(get_dir_names(path))
+    file_n = 0
     for patient in patients:
-        # if file_n != 2:
-        #     file_n += 1
-        #     continue
+        if file_n != 0:
+            file_n += 1
+            continue
         patient_data = path + '/' + patient
         pa_f_d, pa_p_d = get_pre_data(patient_data, 0)
+        save_image(pa_f_d, pa_p_d, point_limit)
         group_type = {}
         if switch[0] == 0:
             pa_l_f_d = []
@@ -274,6 +229,7 @@ def observer_stability(path, switch, point_limit):
                 group[patient] = similarity(pa_f_d, pa_f_d, switch, point_limit)
         else:
             group[patient] = similarity(pa_f_d, pa_f_d, switch, point_limit)
+        file_n += 1
     return group
 
 
@@ -297,9 +253,9 @@ if __name__ == "__main__":
     p_l = 2
     # 单侧 or 双侧
     switching = 0
-    # 是否使用对齐
+    # 弃用
     switching_1 = 0
-    # 是否使用分段
+    # 是否使用分段 弃用
     switching_2 = 0
     # pearson or euc
     switching_3 = 0
@@ -347,7 +303,7 @@ if __name__ == "__main__":
                     else:
                         turn += 1
                         condition.append('好')
-            print('----------------', condition, '^__')
+            print('----------------', condition)
             print('----------------------------------', turn)
     else:
         for key in sq_group.keys():

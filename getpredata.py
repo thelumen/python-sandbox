@@ -17,24 +17,6 @@ def get_file_names(home_path):
         return file_names
 
 
-def get_file_path_info_2(home_path):
-    for dir_name_1 in get_dir_names(home_path):
-        home_path_1 = home_path + '/' + dir_name_1
-        for dir_name_0 in get_dir_names(home_path_1):
-            home_path_2 = home_path_1 + '/' + dir_name_0
-            for file_name in get_file_names(home_path_2):
-                if os.path.splitext(file_name)[1] == '.json':
-                    yield home_path + '/' + file_name
-
-
-def get_file_path_info_1(home_path):
-    for dir_name_1 in get_dir_names(home_path):
-        home_path_1 = home_path + '/' + dir_name_1
-        for file_name in get_file_names(home_path_1):
-            if os.path.splitext(file_name)[1] == '.json':
-                yield home_path + '/' + file_name
-
-
 def get_file_path_info_0(home_path):
     for file_name in get_file_names(home_path):
         if os.path.splitext(file_name)[1] == '.json':

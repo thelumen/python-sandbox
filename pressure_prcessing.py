@@ -29,6 +29,18 @@ def get_foot_type(path, l):
     return os.path.split(path)[1].split('.')[0][-l:]
 
 
+def equ_list(list_1, list_2):
+    if len(list_1) != len(list_2):
+        return False
+    for i in list_1:
+        if i not in list_2:
+            return False
+    for i in list_2:
+        if i not in list_1:
+            return False
+    return True
+
+
 def butter(x, b=0.36):
     """低通滤波"""
     b, a = signal.butter(3, b)
@@ -45,7 +57,7 @@ def scale_line(data, limit):
     for i in range(limit):
         x = i * (data_size - 1) / (limit - 1)
         x_up = math.ceil(x)
-        x_down = int(x)
+        x_down = math.floor(x)
         if x_up == x_down:
             data_scale.append(data[x_down])
             continue
@@ -81,6 +93,8 @@ def alignment_re(data_ob, data_pa, step_ob, step_pa, switch, limit, point_limit,
     pa_offset = process_data(data_pa, step_pa, limit, offset)
     for ob in ob_offset:
         for pa in pa_offset:
+            if equ_list(ob, pa):
+                continue
             cmp_group = []
             for i in range(point_limit):
                 if switch[3] == 0:
@@ -131,10 +145,11 @@ def observer_stability(path, switch, point_limit):
     size_limit = 50
     group = {}
     patients = sorted(get_dir_names(path))
+    file_n = 0
     for patient in patients:
-        # if file_n != 2:
-        #     file_n += 1
-        #     continue
+        if file_n != 0:
+            file_n += 1
+            continue
         patient_data = path + '/' + patient
         pa_f_d, pa_i_d, pa_p_d = get_pre_and_step_data(patient_data, 0)
         group_type = {}
@@ -170,6 +185,7 @@ def observer_stability(path, switch, point_limit):
                                                data_del)
         else:
             group[patient] = similarity_re(pa_f_d, pa_i_d, pa_f_d, pa_i_d, switch, size_limit, point_limit, data_del)
+        file_n += 1
     return group
 
 
@@ -193,7 +209,7 @@ if __name__ == "__main__":
     # 点数限制
     p_l = 2
     # 单侧 or 双侧
-    switching = 1
+    switching = 0
     # 是否使用剔除
     switching_1 = 0
     # 是否使用分段
@@ -244,7 +260,7 @@ if __name__ == "__main__":
                     else:
                         turn += 1
                         condition.append('好')
-            print('----------------', condition, '^__')
+            print('----------------', condition)
             print('----------------------------------', turn)
     else:
         for key in sq_group.keys():

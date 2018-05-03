@@ -2,6 +2,7 @@
 import csv
 import os
 import copy
+import re
 
 
 def makecsv(filepath):
@@ -13,10 +14,11 @@ def makecsv(filepath):
         for line in cvsf.readlines():
             info_group = line.split(',')
             name = info_group[1]
-            if name[-1:] == '1':
+            if re.match(r'\d', name[-1:]):
                 name = name[:-1]
             if name not in people:
                 people[name] = []
+            info_group[0] = info_group[0][:10]
             people[name].append(info_group)
             count += 1
         for man in people:
@@ -32,19 +34,45 @@ def makecsv(filepath):
         writer = csv.writer(resultfile, dialect='excel', delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(['姓名', '时间', '阶段', '年龄', '性别', '身高', '体重', '联系方式', '病因'])
         names = people.keys()
-        for aman in names:
-            if len(people[aman]) > 1:
-                agroupinfo = people[aman]
-                name = agroupinfo[0][1]
-                for i in range(len(agroupinfo)):
-                    agroupinfo[i][1] = name + str(i)
-            first = True
-            for ainfo in people[aman]:
+        for man in names:
+            agroupinfo = people[man]
+            group_size = len(agroupinfo)
+            if group_size == 1:
+                agroupinfo[0][1] = 0
+            else:
+                num = 0
+                agroupinfo[0][1] = 0
+                c = False
+                for i in range(1, group_size):
+                    if agroupinfo[i - 1][0] == agroupinfo[i][0]:
+                        agroupinfo[i][1] = num + 1
+                        num += 1
+                        c = True
+                    else:
+                        if c:
+                            agroupinfo[i][1] = num + 1
+                            num += 1
+                            c = False
+                        else:
+                            agroupinfo[i][1] = num + 2
+                            num += 2
+            # first = True
+            # for ainfo in people[man]:
+            #     line = []
+            #     if first:
+            #         line.append(man)
+            #     else:
+            #         line.append('')
+            #     for anum in range(len(ainfo)):
+            #         astr = ainfo[anum]
+            #         if anum == 7:
+            #             astr = astr[:-1]
+            #         line.append(astr)
+            #     first = False
+            #     writer.writerow(line)
+            for ainfo in people[man]:
                 line = []
-                if first:
-                    line.append(aman)
-                else:
-                    line.append('')
+                line.append('')
                 for anum in range(len(ainfo)):
                     astr = ainfo[anum]
                     if anum == 7:
@@ -62,4 +90,5 @@ def makecsv(filepath):
     return people
 
 
-b = makecsv('/home/ri/user/Tem/people.csv')
+if __name__ == '__main__':
+    b = makecsv('/home/ri/user/Tem/people.csv')
