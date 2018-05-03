@@ -18,7 +18,7 @@ def makecsv(filepath):
                 name = name[:-1]
             if name not in people:
                 people[name] = []
-            info_group[0] = info_group[0][:10]
+            info_group[0] = info_group[0][:5]
             people[name].append(info_group)
             count += 1
         for man in people:
@@ -32,29 +32,29 @@ def makecsv(filepath):
     path = os.path.join(path, filename)
     with open(path, 'w', newline='') as resultfile:
         writer = csv.writer(resultfile, dialect='excel', delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(['姓名', '时间', '阶段', '年龄', '性别', '身高', '体重', '联系方式', '病因'])
+        writer.writerow(['时间', '姓名', '年龄', '性别', '身高', '体重', '联系方式', '病因', '阶段'])
         names = people.keys()
         for man in names:
             agroupinfo = people[man]
             group_size = len(agroupinfo)
             if group_size == 1:
-                agroupinfo[0][1] = 0
+                agroupinfo[0].append(0)
             else:
                 num = 0
-                agroupinfo[0][1] = 0
+                agroupinfo[0].append(0)
                 c = False
                 for i in range(1, group_size):
                     if agroupinfo[i - 1][0] == agroupinfo[i][0]:
-                        agroupinfo[i][1] = num + 1
+                        agroupinfo[i].append(num + 1)
                         num += 1
                         c = True
                     else:
                         if c:
-                            agroupinfo[i][1] = num + 1
+                            agroupinfo[i].append(num + 1)
                             num += 1
                             c = False
                         else:
-                            agroupinfo[i][1] = num + 2
+                            agroupinfo[i].append(num + 2)
                             num += 2
             # first = True
             # for ainfo in people[man]:
@@ -72,13 +72,11 @@ def makecsv(filepath):
             #     writer.writerow(line)
             for ainfo in people[man]:
                 line = []
-                line.append('')
                 for anum in range(len(ainfo)):
                     astr = ainfo[anum]
                     if anum == 7:
                         astr = astr[:-1]
                     line.append(astr)
-                first = False
                 writer.writerow(line)
         writer.writerow([])
         statistics_people = '男：' + str(men) + '人 女：' + str(women) + '人'

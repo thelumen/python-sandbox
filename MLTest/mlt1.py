@@ -4,8 +4,13 @@ import glob
 import json
 import math
 import os
+import sys
 
 import numpy as np
+
+from svmutil import *
+from sklearn import svm
+from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
 
 
@@ -53,13 +58,9 @@ def extract_pressure(file_path):
     return data_t
 
 
-def get_json(path):
-    return glob.glob(path + '/*.json')
-
-
-def pressure_2_data(path, deep, x_limit, point_limit):
+def pressure_2_data(path, x_limit, point_limit):
     re_path = path
-    for i in range(deep):
+    for i in range(4):
         re_path += '/*'
     json_file_path = glob.glob(re_path + '/*.json')
     json_file_path.extend(glob.glob(path + '/*/*/*.json'))
@@ -72,9 +73,8 @@ def pressure_2_data(path, deep, x_limit, point_limit):
             interception = load_json['footstep']
             for i in range(len(interception)):
                 obs = 0
-                if 'observer' in json_file:
+                if 'Observer' in json_file:
                     obs = 1
-                print(obs)
                 step = interception[i]
                 data_step = [scale_line(a_data[step[0]:step[1]], x_limit) for a_data in pre_data]
                 data_reshape = np.array(data_step).flatten().tolist()
@@ -83,12 +83,30 @@ def pressure_2_data(path, deep, x_limit, point_limit):
     return np.array(data_set)
 
 
+def load_model():
+    return joblib.load('/home/ri/ml/model.pkl')
+
+
+def model_svm(svm_x, svm_y, c=1, g=1):
+    clf = svm.SVC(C=c, kernel='poly', gamma=g, decision_function_shape='ovr')
+    clf.fit(svm_x, svm_y.ravel())
+    joblib.dump(clf, '/home/ri/ml/model.pkl')
+    return clf
+
+
 if __name__ == '__main__':
-    de = 4
     x_l = 30
     p_l = [0, 2]
     test_path = '/home/ri/Data'
-    data = pressure_2_data(test_path, de, x_l, p_l)
+    data = pressure_2_data(test_path, x_l, p_l)
     x, y = np.split(data, [(x_l * (p_l[1] - p_l[0])), ], axis=1)
-    x = x[:, :2]
-    x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=1, train_size=0.6)
+    # x = x[:, :2]
+    x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=2)
+    model_svm_1 = load_model()
+    model_svm_2 = model_svm(x_train, y_train)
+    print(model_svm_1.score(x_train, y_train))
+    # y_hat = clf.predict(x_train)
+    # print(y_hat, y_train, '训练集')
+    print(model_svm_2.score(x_test, y_test))
+    # y_hat = clf.predict(x_test)
+    # print(y_hat, y_test, '测试集')
