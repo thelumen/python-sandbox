@@ -4,11 +4,13 @@ import glob
 import json
 import math
 import os
+import pickle
 import sys
 
 import numpy as np
 
 from svmutil import *
+from svm import *
 from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
@@ -72,9 +74,9 @@ def pressure_2_data(path, x_limit, point_limit):
             load_json = json.load(load_file)
             interception = load_json['footstep']
             for i in range(len(interception)):
-                obs = 0
+                obs = .0
                 if 'Observer' in json_file:
-                    obs = 1
+                    obs = 1.0
                 step = interception[i]
                 data_step = [scale_line(a_data[step[0]:step[1]], x_limit) for a_data in pre_data]
                 data_reshape = np.array(data_step).flatten().tolist()
@@ -84,24 +86,45 @@ def pressure_2_data(path, x_limit, point_limit):
 
 
 def load_model():
-    return joblib.load('/home/ri/ml/model.pkl')
+    return joblib.load('/home/ri/ml/model/model.pkl')
 
 
 def model_svm(svm_x, svm_y, c=1, g=1):
     clf = svm.SVC(C=c, kernel='poly', gamma=g, decision_function_shape='ovr')
     clf.fit(svm_x, svm_y.ravel())
-    joblib.dump(clf, '/home/ri/ml/model.pkl')
+    joblib.dump(clf, '/home/ri/ml/model/model.pkl')
     return clf
 
 
-if __name__ == '__main__':
+def save_train_data():
     x_l = 30
     p_l = [0, 2]
     test_path = '/home/ri/Data'
     data = pressure_2_data(test_path, x_l, p_l)
     x, y = np.split(data, [(x_l * (p_l[1] - p_l[0])), ], axis=1)
+    with open('/home/ri/ml/train-data/x.txt', 'wb') as x_file:
+        pickle.dump(x, x_file)
+    with open('/home/ri/ml/train-data/y.txt', 'wb') as y_file:
+        pickle.dump(y, y_file)
+
+
+def load_train_data():
+    with open('/home/ri/ml/train-data/x.txt', 'rb') as x_file:
+        train_x = pickle.load(x_file)
+    with open('/home/ri/ml/train-data/y.txt', 'rb') as y_file:
+        train_y = pickle.load(y_file)
+    return train_x, train_y
+
+
+if __name__ == '__main__':
+    # save_train_data()
+    x, y = load_train_data()
     # x = x[:, :2]
-    x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=2)
+    # x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=2)
+    x_train = np.concatenate((x[:133], x[234:500]), axis=0)
+    x_test = np.concatenate((x[134:233], x[500:]), axis=0)
+    y_train = np.concatenate((y[:133], y[234:500]), axis=0)
+    y_test = np.concatenate((y[134:233], y[500:]), axis=0)
     model_svm_1 = load_model()
     model_svm_2 = model_svm(x_train, y_train)
     print(model_svm_1.score(x_train, y_train))

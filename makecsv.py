@@ -1,7 +1,6 @@
 #!coding:utf-8
 import csv
 import os
-import copy
 import re
 
 
@@ -12,7 +11,7 @@ def makecsv(filepath):
         men = 0
         women = 0
         for line in cvsf.readlines():
-            info_group = line.split(',')
+            info_group = line.rstrip().split(',')
             name = info_group[1]
             if re.match(r'\d', name[-1:]):
                 name = name[:-1]
@@ -71,13 +70,7 @@ def makecsv(filepath):
             #     first = False
             #     writer.writerow(line)
             for ainfo in people[man]:
-                line = []
-                for anum in range(len(ainfo)):
-                    astr = ainfo[anum]
-                    if anum == 7:
-                        astr = astr[:-1]
-                    line.append(astr)
-                writer.writerow(line)
+                writer.writerow(ainfo)
         writer.writerow([])
         statistics_people = '男：' + str(men) + '人 女：' + str(women) + '人'
         statistics_man = '总计：' + str(len(people)) + '人'
