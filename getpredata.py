@@ -1,4 +1,5 @@
 #!coding:utf-8
+import glob
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,10 +18,17 @@ def get_file_names(home_path):
         return file_names
 
 
-def get_file_path_info_0(home_path):
-    for file_name in get_file_names(home_path):
-        if os.path.splitext(file_name)[1] == '.json':
-            yield home_path + '/' + file_name
+def get_file_with_suffix(path, suffix):
+    return glob.glob(os.path.join(path, '*.' + suffix))
+
+
+def get_json_file_path(path, suffix='json'):
+    """获取路径下包括子目录下的全部.json文件"""
+    json_file_path = []
+    json_file_path.extend(get_file_with_suffix(path, suffix))
+    for dir_name in get_dir_names(path):
+        json_file_path.extend(get_json_file_path(os.path.join(path, dir_name), suffix))
+    return json_file_path
 
 
 def extract_pressure(file_path):
@@ -64,71 +72,48 @@ def compared(c_d_1, c_d_2, no):
     plt.show()
 
 
-def get_pre_data(root_path, deep, show_plt=False):
-    fpi = 0
-    if deep == 0:
-        fpi = get_file_path_info_0(root_path)
+def get_pre_data(root_path):
     result = []
     path = []
-    g_count = 0
-    while True:
-        try:
-            if deep == -1:
-                file_path_info = root_path
-            else:
-                file_path_info = next(fpi)
-            data = extract_pressure(file_path_info.replace('.json', '.dat'))
-            with open(file_path_info, 'r') as load_file:
-                print(file_path_info)
-                load_json = json.load(load_file)
-                interception = load_json['footstep']
-                data_r = []
-                for i in range(len(interception)):
-                    step = interception[i]
-                    data_r.append([a_data[step[0]:step[1]] for a_data in data])
-                    if show_plt:
-                        data2plt(data_r[i], file_path_info)
-            g_count += 1
-            result.append(data_r)
-            path.append(file_path_info)
-            if deep == -1:
-                break
-        except StopIteration as e:
-            # print('Generator 0 is over, and return value:', g_count)
-            break
+    for json_path in get_json_file_path(root_path):
+        data = extract_pressure(json_path.replace('.json', '.dat'))
+        with open(json_path, 'r') as load_file:
+            print(json_path)
+            load_json = json.load(load_file)
+            interception = load_json['footstep']
+            data_r = []
+            for i in range(len(interception)):
+                step = interception[i]
+                data_r.append([a_data[step[0]:step[1]] for a_data in data])
+        result.append(data_r)
+        path.append(json_path)
     return result, path
 
 
-def get_pre_and_step_data(root_path, deep):
-    fpi = 0
-    if deep == 0:
-        fpi = get_file_path_info_0(root_path)
+def get_pre_and_step_data(root_path):
+    """
+        根据路径获取压力数据
+
+        return-----------
+        data : 压力数据
+        path : 压力数据的路径
+        interception : 截断列表
+    """
     data = []
     path = []
     interception = []
-    # g_count = 0
-    while True:
-        try:
-            if deep == -1:
-                file_path_info = root_path
-            else:
-                file_path_info = next(fpi)
-            json_data = extract_pressure(file_path_info.replace('.json', '.dat'))
-            with open(file_path_info, 'r') as load_file:
-                print(file_path_info)
-                load_json = json.load(load_file)
-                cut = load_json['footstep']
-            # g_count += 1
-            data.append(json_data)
-            path.append(file_path_info)
-            interception.append(cut)
-            if deep == -1:
-                break
-        except StopIteration as e:
-            # print('Generator 0 is over, and return value:', g_count)
-            break
-    return data, interception, path
+    for json_path in get_json_file_path(root_path):
+        json_data = extract_pressure(json_path.replace('.json', '.dat'))
+        with open(json_path, 'r') as load_file:
+            print(json_path)
+            load_json = json.load(load_file)
+            cut = load_json['footstep']
+        data.append(json_data)
+        path.append(json_path)
+        interception.append(cut)
+    return data, path, interception
 
 
 if __name__ == "__main__":
-    get_pre_data('/home/ri/user/Tem/医院数据', 1, show_plt=True)
+    get_pre_and_step_data('/home/ri/user/Tem/医院数据/积水潭')
+

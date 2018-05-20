@@ -3,6 +3,7 @@
 import pickle
 
 import numpy as np
+from sklearn.datasets import dump_svmlight_file
 from svm import *
 from svmutil import *
 
@@ -12,7 +13,7 @@ def save_libsvm(model):
 
 
 def load_libsvm():
-    return svm_load_model('/home/ri/ml/model/model_libsvm')
+    return svm_load_model('/home/ri/ml/model/model_libsvm_3')
 
 
 def load_train_data():
@@ -56,9 +57,16 @@ if __name__ == '__main__':
     # x_test = np.concatenate((x[134:233], x[500:]), axis=0).tolist()
     # y_train = np.concatenate((y[:133], y[234:500]), axis=0).tolist()
     # y_test = np.concatenate((y[134:233], y[500:]), axis=0).tolist()
+    prob = svm_problem(y, x)
+    param = svm_parameter('-t 2 -g 3.0517578125e-05 -c 8.0')
+    model = svm_train(prob, param)
+    # y = [0, 0, 1, 1]
+    # x = [[0.1, 0.2], [0.2, 0.3], [0.9, 1.1], [1.0, 1.1]]
+    # dump_svmlight_file(x,y,'/home/ri/ml/train-data/libsvm_1.txt')
     # prob = svm_problem(y, x)
-    # param = svm_parameter('-t 2 -g 3.0517578125e-05 -c 8.0')
+    # param = svm_parameter('-g 0.5')
     # model = svm_train(prob, param)
-    model = load_libsvm()
+    # model = load_libsvm()
+    save_libsvm(model)
+    # model = load_libsvm()
     p_label, p_acc, p_val = svm_predict(y, x, model)
-    print(p_label)

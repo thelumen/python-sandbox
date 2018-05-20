@@ -35,29 +35,28 @@ def solution(equation, y):
 
 
 def save_image(foot_data, path_data, point_limit):
-    maker = ['*', ':']
+    # maker = ['*', ':']
     for json in range(len(foot_data)):
         for step in range(len(foot_data[json])):
             for i in range(point_limit):
-                plt.plot(foot_data[json][step][i], maker[i], color=index_c[i])
+                plt.plot(foot_data[json][step][i], color=index_c[i])
             plt.ylim(0, 180)
-            plt.show()
-            # file_name = get_file_name(path_data[json])
-            # patient_name = os.path.split(file_name[0])
-            # p_condition = os.path.split(patient_name[0])
-            # if p_condition == '术前':
-            #     p_condition = 'before'
-            # else:
-            #     p_condition = 'after'
-            # title = p_condition[0] + '/img/' + p_condition[1] + '/' + patient_name[1] + '/' + file_name[1] + '_' + str(
-            #     step) + '.png'
-            # plt.title(title)
-            # plt.savefig(title)
-            # plt.close()
+            # plt.show()
+            file_name = get_file_name(path_data[json])
+            patient_name = os.path.split(file_name[0])
+            p_condition = os.path.split(patient_name[0])
+            if p_condition[1] == '术前':
+                title = p_condition[0] + '/img/before/' + patient_name[1] + '/' + file_name[1] + '_' + str(
+                    step) + '.png'
+            else:
+                title = p_condition[0] + '/img/after/' + patient_name[1] + '/' + file_name[1] + '_' + str(step) + '.png'
+            plt.title(title)
+            plt.savefig(title)
+            plt.close()
 
 
 def get_file_name(path):
-    return os.path.split(os.path.splitext(path)[0])[1]
+    return os.path.split(os.path.splitext(path)[0])
 
 
 def get_parent_path(path):
@@ -201,8 +200,8 @@ def observer_stability(path, switch, point_limit):
             file_n += 1
             continue
         patient_data = path + '/' + patient
-        pa_f_d, pa_p_d = get_pre_data(patient_data, 0)
-        save_image(pa_f_d, pa_p_d, point_limit)
+        pa_f_d, pa_p_d = get_pre_data(patient_data)
+        # save_image(pa_f_d, pa_p_d, point_limit)
         group_type = {}
         if switch[0] == 0:
             pa_l_f_d = []
@@ -250,7 +249,7 @@ if __name__ == "__main__":
     #         plt.close()
 
     # 点数限制
-    p_l = 2
+    p_l = 8
     # 单侧 or 双侧
     switching = 0
     # 弃用

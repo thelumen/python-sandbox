@@ -13,6 +13,16 @@ from pearson import pearson, euc_dist
 index_c = ['k', 'r', 'tan', 'orange', 'm', 'b', 'g', 'yellow']
 
 
+def print_plot(data, step, filename=""):
+    plt.close(1)
+    plt.figure(1)
+    for i in range(8):
+        plt.plot(data[i][step[0]:step[1]], color=index_c[i])
+    plt.ylim(0, 170)
+    plt.title(filename)
+    plt.show()
+
+
 def get_file_name(path):
     return os.path.split(os.path.splitext(path)[0])[1]
 
@@ -89,6 +99,7 @@ def process_data(foot_data, step, limit, offset):
 
 def alignment_re(data_ob, data_pa, step_ob, step_pa, switch, limit, point_limit, offset=2):
     result = []
+    print_plot(data_pa, step_pa)
     ob_offset = process_data(data_ob, step_ob, limit, offset)
     pa_offset = process_data(data_pa, step_pa, limit, offset)
     for ob in ob_offset:
@@ -151,7 +162,7 @@ def observer_stability(path, switch, point_limit):
             file_n += 1
             continue
         patient_data = path + '/' + patient
-        pa_f_d, pa_i_d, pa_p_d = get_pre_and_step_data(patient_data, 0)
+        pa_f_d, pa_i_d, pa_p_d = get_pre_and_step_data(patient_data)
         group_type = {}
         if switch[0] == 0:
             pa_l_f_d = []
