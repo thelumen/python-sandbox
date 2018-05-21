@@ -88,6 +88,8 @@ def make_2d_pressure(path):
             step_begin = pa_data_step[i][0]
             step_end = pa_data_step[i][1]
             pa_step_data = [max(pa_data[i][step_begin:step_end]) for i in range(8)]
+            width = 3.5
+            info = 'Condition :' + str(pa_condition[1]) + ' Name :' + str(pa_name)
             if pa_condition[1] == '术前':
                 b_s_size = len(before_set)
                 before_set.add(pa_name)
@@ -96,8 +98,11 @@ def make_2d_pressure(path):
                         p_path = os.path.join(novel_data[pa_name], pa_name)
                         left_path = os.path.join(p_path, 'left.jpg')
                         right_path = os.path.join(p_path, 'right.jpg')
-                        document.add_picture(left_path, width=Inches(4))
-                        document.add_picture(right_path, width=Inches(4))
+                        document.add_paragraph(info+' left')
+                        document.add_picture(left_path, width=Inches(width))
+                        document.add_page_break()
+                        document.add_paragraph(info+' right')
+                        document.add_picture(right_path, width=Inches(width))
             elif pa_condition[1] == '术后':
                 t_name = pa_name + '1'
                 a_s_size = len(after_set)
@@ -107,8 +112,11 @@ def make_2d_pressure(path):
                         p_path = os.path.join(novel_data[pa_name], t_name)
                         left_path = os.path.join(p_path, 'left.jpg')
                         right_path = os.path.join(p_path, 'right.jpg')
-                        document.add_picture(left_path, width=Inches(4))
-                        document.add_picture(right_path, width=Inches(4))
+                        document.add_paragraph(info+' left')
+                        document.add_picture(left_path, width=Inches(width))
+                        document.add_page_break()
+                        document.add_paragraph(info+' right')
+                        document.add_picture(right_path, width=Inches(width))
             save_2d_pressure(pa_step_data, pa_info, lib_if, document)
     document.save('/home/ri/demo.docx')
 
