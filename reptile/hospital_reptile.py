@@ -26,7 +26,7 @@ def fuc_time(url, use_agent, delayed, time_out=5):
     retry_count = 5
     for i in range(retry_count):
         try:
-            signal.signal(signal.SIGABRT, handler)
+            signal.signal(signal.SIGABRT, handler)#
             signal.alarm(time_out)  # time_out为超时时间
             temp = get_pq_with_url(url, use_agent, delayed)  # 函数设置部分，如果未超时则正常返回数据，
             return temp
