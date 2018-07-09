@@ -23,8 +23,9 @@ def get_pq_with_url(url, use_agent=0, delayed=3):
                 p = pq(url)
             elif use_agent == 1:
                 p = pq(get_html(url))
-        except:
-            print('重试')
+        except Exception as e:
+            print('%s' % e)
+            print('出错重试')
     return p
 
 
@@ -59,8 +60,9 @@ def insert_mysql(info):
         print("完成数 : %s " % effect_row)
         print('-----------------------------------------')
         db.commit()
-    except:
-        print('出错')
+    except Exception as e:
+        print('%s' % e)
+        print('出错 回滚')
         print('-----------------------------------------')
         db.rollback()
     db.close()
@@ -187,8 +189,9 @@ def get_html(url):
             time_delayed(1)
             response = request.urlopen(url)
             html = response.read().decode("utf-8")
-        except:
-            print('出错')
+        except Exception as e:
+            print('%s' % e)
+            print('出错 重试')
     # print(html)
     return html
 
