@@ -46,26 +46,43 @@ def fuc_time(url, use_agent, delayed, time_out=8):
     return 0
 
 
-def insert_mysql(info):
+def operat_mysql(info=0, operation='insert'):
     # 打开数据库连接
     db = pymysql.connect(host='192.168.1.203', port=3306, user='root',
                          passwd='Zkhc,.2017', db='znkf_new', charset='utf8')
     cursor = db.cursor()
-    try:
-        effect_row = cursor.executemany('INSERT INTO sys_hospital\
-                      (province,city,region, name, address, grade,phone,email,operation)\
-                      VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                                        [(h_i.province, h_i.city, h_i.area, h_i.name, h_i.address, h_i.grade,
-                                          h_i.phone, h_i.email, h_i.operation) for h_i in info])
-        print("完成数 : %s " % effect_row)
-        print('-----------------------------------------')
-        db.commit()
-    except Exception as e:
-        print('%s' % e)
-        print('出错 回滚')
-        print('-----------------------------------------')
-        db.rollback()
-    db.close()
+    if operation == 'insert':
+        if info == 0:
+            return 0
+        try:
+            effect_row = cursor.executemany('INSERT INTO sys_hospital\
+                              (province,city,region, name, address, grade,phone,email,operation)\
+                              VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                                            [(h_i.province, h_i.city, h_i.area, h_i.name, h_i.address, h_i.grade,
+                                              h_i.phone, h_i.email, h_i.operation) for h_i in info])
+            print("完成数 : %s " % effect_row)
+            print('-----------------------------------------')
+            db.commit()
+        except Exception as e:
+            print('%s' % e)
+            print('出错 回滚')
+            print('-----------------------------------------')
+            db.rollback()
+        finally:
+            db.close()
+    elif operation == 'select':
+        try:
+            cursor.execute('SELECT DISTINCT city FROM sys_hospital')  # 执行sql语句
+            results = cursor.fetchall()  # 获取查询的所有记录
+            city_list = []
+            # 遍历结果
+            for row in results:
+                city_list.append(row[0])
+            return city_list
+        except Exception as e:
+            raise e
+        finally:
+            db.close()
 
 
 # 城市页面处理
@@ -201,8 +218,8 @@ def main(url):
     city_info_dict = solve_province(url)
     if city_info_dict == 0:
         exit(1)
-    # f_list = ['上海市']
-    c_list = ['北京市', '天津市', '重庆市', '上海市', '江苏省']
+    # 查询数据库中已包含的城市，作为剔除列表
+    c_list = operat_mysql(operation='select')
     for i in city_info_dict:
         if i in c_list:
             continue
@@ -210,7 +227,7 @@ def main(url):
         print('%s  %s  %s' % (city_info[0], i, city_info[1]))
         hospital_info_list = solve_city(city_info[0], i, city_info[1], 1)
         if hospital_info_list != 0:
-            insert_mysql(hospital_info_list)
+            operat_mysql(hospital_info_list)
     print("End : %s" % time.ctime())
 
 
