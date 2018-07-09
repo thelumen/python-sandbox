@@ -1,37 +1,46 @@
 #!coding:utf-8
-from urllib import request
-from pyquery import PyQuery as pq
 import pymysql
 import time
 import sched
 import signal
-
+import random
 from reptile.hospital import Hospital
+from urllib import request
+from pyquery import PyQuery as pq
+
+
+# 随机延时
+def time_delayed(delayed=3, random_l=2):
+    time.sleep(delayed + random.uniform(0, random_l))
 
 
 def get_pq_with_url(url, use_agent=0, delayed=3):
     p = 0
-    if use_agent == 0:
-        time.sleep(delayed)
-        p = pq(url)
-    elif use_agent == 1:
-        p = pq(get_html(url))
+    while p == 0:
+        try:
+            if use_agent == 0:
+                time_delayed(delayed)
+                p = pq(url)
+            elif use_agent == 1:
+                p = pq(get_html(url))
+        except:
+            print('重试')
     return p
 
 
-def fuc_time(url, use_agent, delayed, time_out=5):
+def fuc_time(url, use_agent, delayed, time_out=8):
     def handler(signum, frame):
         raise AssertionError
 
     retry_count = 5
-    for i in range(retry_count):
+    for r_i in range(retry_count):
         try:
-            signal.signal(signal.SIGABRT, handler)#
+            signal.signal(signal.SIGALRM, handler)
             signal.alarm(time_out)  # time_out为超时时间
             temp = get_pq_with_url(url, use_agent, delayed)  # 函数设置部分，如果未超时则正常返回数据，
             return temp
         except AssertionError:
-            print('->第 %d 超时，重试' % i)  # 超时则报错
+            print('->第 %d 超时，重试' % r_i)  # 超时则报错
     print('->%s 多次请求失败' % url)
     return 0
 
@@ -59,6 +68,7 @@ def insert_mysql(info):
 
 # 城市页面处理
 def solve_city(province, city, base_url, test_print=0, use_agent=0, delayed=3):
+    revoke_field = ['医院网站', '医院地址', '联系电话', '医院等级', '经营方式', '电子邮箱', '重点科室', '传真号码']
     p = fuc_time(base_url, use_agent, delayed)
     if p == 0:
         print('获取%s失败' % city)
@@ -89,9 +99,11 @@ def solve_city(province, city, base_url, test_print=0, use_agent=0, delayed=3):
         for h_i in t:  # ->ul
             for j in h_i.children().items():  # ->li
                 hospital = 0
-                for k in j.children().items():  # ->b,ui
+                for k in j.children().items():  # ->b,ul
                     if hospital == 0:
                         if len(k('b')) == 0:
+                            break
+                        elif k.text() in revoke_field:
                             break
                         else:
                             hospital = Hospital(k.text(), province, city, a)
@@ -172,7 +184,7 @@ def get_html(url):
     html = 0
     while html == 0:
         try:
-            time.sleep(1)
+            time_delayed(1)
             response = request.urlopen(url)
             html = response.read().decode("utf-8")
         except:
@@ -181,26 +193,29 @@ def get_html(url):
     return html
 
 
-if __name__ == '__main__':
+def main(url):
     print("Start : %s" % time.ctime())
-    country_url = 'http://www.a-hospital.com/w/%E5%85%A8%E5%9B%BD%E5%8C%BB%E9%99%A2%E5%88%97%E8%A1%A8'
-    h_info = solve_city('上海市', '上海市',
-                               'http://www.a-hospital.com/w/%E4%B8%8A%E6%B5%B7%E5%B8%82%E5%8C%BB%E9%99%A2%E5%88%97%E8%A1%A8',
-                               1)
-    if h_info != 0:
-        insert_mysql(h_info)
-
-    # city_info_dict = solve_province(country_url)
-    # if city_info_dict == 0:
-    #     exit(1)
+    city_info_dict = solve_province(url)
+    if city_info_dict == 0:
+        exit(1)
     # f_list = ['上海市']
-    # c_list = ['北京市', '天津市', '重庆市']
-    # for i in city_info_dict:
-    #     if i in c_list:
-    #         continue
-    #     city_info = city_info_dict[i]
-    #     print('%s  %s  %s' % (city_info[0], i, city_info[1]))
-    #     hospital_info_list = solve_city(city_info[0], i, city_info[1], 1)
-    #     # 录入数据库
-    #     insert_mysql(hospital_info_list)
+    c_list = ['北京市', '天津市', '重庆市', '上海市', '江苏省']
+    for i in city_info_dict:
+        if i in c_list:
+            continue
+        city_info = city_info_dict[i]
+        print('%s  %s  %s' % (city_info[0], i, city_info[1]))
+        hospital_info_list = solve_city(city_info[0], i, city_info[1], 1)
+        if hospital_info_list != 0:
+            insert_mysql(hospital_info_list)
     print("End : %s" % time.ctime())
+
+
+if __name__ == '__main__':
+    country_url = 'http://www.a-hospital.com/w/%E5%85%A8%E5%9B%BD%E5%8C%BB%E9%99%A2%E5%88%97%E8%A1%A8'
+    # h_info = solve_city('上海市', '上海市',
+    #                            'http://www.a-hospital.com/w/%E4%B8%8A%E6%B5%B7%E5%B8%82%E5%8C%BB%E9%99%A2%E5%88%97%E8%A1%A8',
+    #                            1)
+    # if h_info != 0:
+    #     insert_mysql(h_info)
+    main(country_url)
