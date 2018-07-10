@@ -169,6 +169,8 @@ def solve_city(province, city, base_url, test_print=0, use_agent=0, delayed=3):
     area_url = {}
     if province[-1:] == '省' or province[-3:] == '自治区':
         for p_i in p('ul').eq(0).children().items():
+            if p_i.text() == '三甲医院':
+                break
             link = p_i.children().attr('href')
             if link is not None:
                 area_url[p_i.text()] = 'http://www.a-hospital.com' + link
